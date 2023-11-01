@@ -1,124 +1,173 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import Layout from "@/components/layouts/Layout";
+import axios from "axios";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
-const inter = Inter({ subsets: ['latin'] })
+export default function Home(props: any) {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [notes, setNotes] = useState(props.notes);
+  const [ascendingOrder, setAscendingOrder] = useState<boolean>(true);
+  console.log(notes);
+  const handleDeleteNote = async (id: string) => {
+    try {
+      if (confirm("Are you sure to delete this category?")) {
+        await axios
+          .delete(`${process.env.NEXT_PUBLIC_API_URL}/notes/${id}`)
+          .then((res) => res.data)
+          .finally(() => router.reload());
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-export default function Home() {
+  const handleSort = () => {
+    const sortedData = [...notes];
+
+    if (ascendingOrder) {
+      sortedData.sort((a, b) => b.priority - a.priority); // Artan sıralama
+    } else {
+      sortedData.sort((a, b) => a.priority - b.priority); // Azalan sıralama
+    }
+
+    setNotes(sortedData);
+    setAscendingOrder(!ascendingOrder);
+  };
+
+  const searchHandler = async (e: any) => {
+    e.preventDefault();
+    const searchValue = e.target.value;
+    const filteredNotes = notes.filter((note: any) =>
+      note.title.toLowerCase().includes(searchValue.toLowerCase())
+    );
+    setNotes(filteredNotes);
+
+    if (filteredNotes.length === 0) {
+      alert("No note found!");
+      router.reload();
+    }
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <form className="w-full max-w-md" onSubmit={searchHandler}>
+        <label className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">
+          {t("search")}
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <svg
+              className="w-4 h-4 text-gray-500 dark:text-gray-400"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 20 20"
+            >
+              <path
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+              />
+            </svg>
+          </div>
+          <input
+            type="search"
+            id="default-search"
+            className="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            placeholder={t("search")}
+            onChange={searchHandler}
+          />
+          <button
+            type="submit"
+            className="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
           >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            {t("search")}
+          </button>
+        </div>
+      </form>
+      <div>
+        <button
+          className="focus:outline-none text-white bg-green-700 hover:bg-green-800 font-medium rounded-lg text-sm px-5 py-2.5 mt-2"
+          onClick={handleSort}
+        >
+          {ascendingOrder ? t("asc") : t("desc")}
+        </button>
+      </div>
+      <div className="container my-12 mx-auto px-4 md:px-12">
+        <div className="flex flex-wrap -mx-1 lg:-mx-4">
+          {notes &&
+            notes.map((note: any) => (
+              <div
+                key={note._id}
+                className="my-1 px-1 w-full md:w-1/2 lg:my-4 lg:px-4 lg:w-1/3"
+              >
+                <article className="overflow-hidden rounded-lg shadow-lg">
+                  <Link href="/">
+                    <Image
+                      alt="Placeholder"
+                      className="block h-auto w-full"
+                      height={400}
+                      width={600}
+                      src="https://picsum.photos/600/400/?random"
+                    />
+                  </Link>
+
+                  <header className="flex items-center justify-between leading-tight p-2 md:p-4">
+                    <h1 className="text-lg">
+                      <Link
+                        className="no-underline hover:underline text-black"
+                        href="/"
+                      >
+                        {note.title}
+                      </Link>
+                    </h1>
+                  </header>
+
+                  <footer className="flex items-center justify-between leading-none p-2 md:p-4">
+                    <Link
+                      className="flex items-center no-underline hover:underline text-black"
+                      href="/"
+                    >
+                      <p className="text-sm">{note.description}</p>
+                    </Link>
+                    <div className="mb-4">
+                      <Link
+                        className="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2  focus:outline-none "
+                        href={`/notes/${note._id}`}
+                      >
+                        {t("edit")}
+                      </Link>
+                      <button
+                        className="focus:outline-none text-white bg-red-700 hover:bg-red-800 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
+                        onClick={() => handleDeleteNote(note._id)}
+                      >
+                        {t("delete")}
+                      </button>
+                    </div>
+                  </footer>
+                </article>
+              </div>
+            ))}
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`${inter.className} mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p
-            className={`${inter.className} m-0 max-w-[30ch] text-sm opacity-50`}
-          >
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    </div>
+  );
 }
+
+export const getServerSideProps = async (context: any) => {
+  const res = await axios
+    .get(`${process.env.NEXT_PUBLIC_API_URL}/notes`)
+    .then((res) => res.data.data);
+
+  return {
+    props: {
+      notes: res,
+    },
+  };
+};
